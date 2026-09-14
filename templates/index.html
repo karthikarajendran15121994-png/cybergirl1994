@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Password Strength Checker</title>
+<style>
+    :root {
+        --ink: #e8ecef;
+        --dim: #8a97a3;
+        --panel: #14181d;
+        --panel-line: #262c33;
+        --field: #1b2027;
+        --accent: #4f8cff;
+        --weak: #e05f5f;
+        --fair: #d9a441;
+        --strong: #3fb87f;
+        --mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+        --sans: "IBM Plex Sans", "Segoe UI", Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    @media (prefers-reduced-motion: reduce) {
+        * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    }
+
+    body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 24px;
+        font-family: var(--sans);
+        background: #0b0e12;
+        background-image:
+            linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+        background-size: 28px 28px;
+        color: var(--ink);
+    }
+
+    .card {
+        width: 100%;
+        max-width: 420px;
+        background: var(--panel);
+        border: 1px solid var(--panel-line);
+        border-radius: 14px;
+        padding: 32px;
+    }
+
+    .kicker {
+        font-family: var(--mono);
+        font-size: 12px;
+        letter-spacing: 0.04em;
+        color: var(--dim);
+        margin: 0 0 4px;
+    }
+
+    h1 {
+        font-size: 22px;
+        font-weight: 600;
+        margin: 0 0 24px;
+        color: var(--ink);
+    }
+
+    label {
+        display: block;
+        font-size: 13px;
+        color: var(--dim);
+        margin-bottom: 6px;
+    }
+
+    .field-row {
+        position: relative;
+    }
+
+    input[type="password"],
+    input[type="text"] {
+        width: 100%;
+        padding: 13px 44px 13px 14px;
+        border-radius: 8px;
+        border: 1px solid var(--panel-line);
+        background: var(--field);
+        color: var(--ink);
+        font-size: 15px;
+        font-family: var(--mono);
+        outline: none;
+        transition: border-color 0.15s ease;
+    }
+
+    input:focus-visible {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(79, 140, 255, 0.18);
+    }
+
+    .toggle-visibility {
+        position: absolute;
+        right: 6px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: var(--dim);
+        font-size: 12px;
+        font-family: var(--sans);
+        cursor: pointer;
+        padding: 8px 10px;
+        border-radius: 6px;
+    }
+
+    .toggle-visibility:hover { color: var(--ink); }
+    .toggle-visibility:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    .meter-track {
+        margin-top: 16px;
+        height: 6px;
+        border-radius: 4px;
+        background: var(--field);
+        overflow: hidden;
+    }
+
+    .meter-fill {
+        height: 100%;
+        width: 0%;
+        border-radius: 4px;
+        background: var(--weak);
+        transition: width 0.25s ease, background 0.25s ease;
+    }
+
+    .verdict-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-top: 10px;
+    }
+
+    .verdict {
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    .verdict.weak { color: var(--weak); }
+    .verdict.fair { color: var(--fair); }
+    .verdict.strong { color: var(--strong); }
+
+    .verdict-note {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--dim);
+    }
+
+    .checklist {
+        list-style: none;
+        margin: 20px 0 0;
+        padding: 0;
+        display: grid;
+        gap: 8px;
+    }
+
+    .checklist li {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+        color: var(--dim);
+    }
+
+    .checklist .mark {
+        width: 16px;
+        height: 16px;
+        border-radius: 4px;
+        border: 1px solid var(--panel-line);
+        flex: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        color: transparent;
+    }
+
+    .checklist li.met { color: var(--ink); }
+    .checklist li.met .mark {
+        background: var(--strong);
+        border-color: var(--strong);
+        color: #06120b;
+    }
+
+    button.submit {
+        width: 100%;
+        margin-top: 24px;
+        padding: 13px;
+        border: none;
+        border-radius: 8px;
+        background: var(--accent);
+        color: #071122;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: var(--sans);
+    }
+
+    button.submit:hover { background: #6a9dff; }
+    button.submit:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+    .server-result {
+        margin-top: 20px;
+        padding: 14px 16px;
+        background: var(--field);
+        border-radius: 8px;
+        border: 1px solid var(--panel-line);
+        font-size: 13px;
+        color: var(--dim);
+    }
+
+    .footer {
+        text-align: center;
+        color: #4a525c;
+        margin-top: 22px;
+        font-size: 12px;
+        font-family: var(--mono);
+    }
+</style>
+</head>
+<body>
+
+<div class="card">
+    <p class="kicker">access control / self-check</p>
+    <h1>Password strength checker</h1>
+
+    <form method="POST" id="pwForm" novalidate>
+        <label for="password">Password</label>
+        <div class="field-row">
+            <input
+                type="password"
+                id="password"
+                name="password"
+                placeholder="Enter a password to test"
+                autocomplete="new-password"
+                required
+            >
+            <button type="button" class="toggle-visibility" id="toggleBtn" aria-label="Show password" aria-pressed="false">show</button>
+        </div>
+
+        <div class="meter-track" aria-hidden="true">
+            <div class="meter-fill" id="meterFill"></div>
+        </div>
+
+        <div class="verdict-row">
+            <span class="verdict weak" id="verdictText">Enter a password</span>
+            <span class="verdict-note" id="verdictScore"></span>
+        </div>
+
+        <ul class="checklist" id="checklist">
+            <li data-rule="length"><span class="mark">✓</span> At least 8 characters</li>
+            <li data-rule="upper"><span class="mark">✓</span> Uppercase letter</li>
+            <li data-rule="lower"><span class="mark">✓</span> Lowercase letter</li>
+            <li data-rule="number"><span class="mark">✓</span> Number</li>
+            <li data-rule="special"><span class="mark">✓</span> Special character (@#$%!...)</li>
+        </ul>
+
+        <button type="submit" class="submit">Check on server</button>
+    </form>
+
+    {% if result %}
+    <div class="server-result">
+        Server evaluation: <strong>{{ result }}</strong>
+    </div>
+    {% endif %}
+
+    <p class="footer">cybersecurity learning project</p>
+</div>
+
+<script>
+(function () {
+    const input = document.getElementById('password');
+    const meterFill = document.getElementById('meterFill');
+    const verdictText = document.getElementById('verdictText');
+    const verdictScore = document.getElementById('verdictScore');
+    const checklist = document.getElementById('checklist');
+    const toggleBtn = document.getElementById('toggleBtn');
+
+    const rules = {
+        length: v => v.length >= 8,
+        upper: v => /[A-Z]/.test(v),
+        lower: v => /[a-z]/.test(v),
+        number: v => /[0-9]/.test(v),
+        special: v => /[^A-Za-z0-9]/.test(v)
+    };
+
+    function evaluate(value) {
+        if (!value) return { score: 0, label: 'Enter a password', level: 'weak' };
+
+        let met = 0;
+        Object.values(rules).forEach(fn => { if (fn(value)) met++; });
+
+        // reward length beyond the minimum, penalize very short strings
+        let lengthBonus = Math.min(Math.max(value.length - 8, 0), 12) / 12; // 0..1
+        let score = (met / 5) * 0.7 + lengthBonus * 0.3;
+        score = Math.min(score, 1);
+
+        let level = 'weak';
+        let label = 'Weak';
+        if (score >= 0.75 && met === 5) { level = 'strong'; label = 'Strong'; }
+        else if (score >= 0.45) { level = 'fair'; label = 'Fair'; }
+
+        return { score, label, level, met };
+    }
+
+    function render() {
+        const value = input.value;
+        const { score, label, level, met } = evaluate(value);
+
+        meterFill.style.width = Math.round(score * 100) + '%';
+        meterFill.style.background =
+            level === 'strong' ? 'var(--strong)' :
+            level === 'fair' ? 'var(--fair)' : 'var(--weak)';
+
+        verdictText.textContent = value ? label : 'Enter a password';
+        verdictText.className = 'verdict ' + level;
+        verdictScore.textContent = value ? `${met ?? 0}/5 criteria` : '';
+
+        Object.keys(rules).forEach(key => {
+            const li = checklist.querySelector(`[data-rule="${key}"]`);
+            const passed = value ? rules[key](value) : false;
+            li.classList.toggle('met', passed);
+        });
+    }
+
+    input.addEventListener('input', render);
+    render();
+
+    toggleBtn.addEventListener('click', () => {
+        const showing = input.type === 'text';
+        input.type = showing ? 'password' : 'text';
+        toggleBtn.textContent = showing ? 'show' : 'hide';
+        toggleBtn.setAttribute('aria-pressed', String(!showing));
+        toggleBtn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+    });
+})();
+</script>
+
+</body>
+</html>
